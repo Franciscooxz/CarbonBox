@@ -78,12 +78,14 @@ El enunciado sugiere una cola "mock" con un array en memoria. **No funciona en e
 el worker corre en **otro proceso** (`npm run worker`), y un array en la memoria de la API
 no es visible para otro proceso. El mensaje nunca llegaría.
 
-**Decisión:** usar **SQS real en LocalStack** (y S3 en LocalStack).
-- Ventaja: es el mismo código que correría en AWS; suma puntos de AWS y Dead Letter Queue.
-- Plan B si LocalStack da problemas: una cola en una tabla de PostgreSQL con
-  `SELECT ... FOR UPDATE SKIP LOCKED`, detrás de las mismas interfaces
-  `IMessagePublisher` / `IMessageConsumer`. Cambiar de una a otra no toca el dominio
-  ni la aplicación (eso es justamente lo que demuestra Clean Architecture).
+**Decisión:** usar la **API real de SQS** con el SDK oficial (`@aws-sdk/client-sqs`).
+- La primera opción era LocalStack, pero desde la versión 2026.03 exige una cuenta y un token.
+  Por eso en local se usa **ElasticMQ**, que implementa la misma API de SQS: el código es idéntico
+  y solo cambia el `endpoint`. Incluye Dead Letter Queue (`maxReceiveCount: 3`).
+- Almacenamiento: **filesystem local** detrás de `IFileStorage` (el enunciado lo permite); en AWS sería S3.
+- Plan B que no hizo falta: una cola en una tabla de PostgreSQL con `SELECT ... FOR UPDATE SKIP LOCKED`.
+- Todo va detrás de las interfaces `IMessagePublisher` / `IMessageConsumer` / `IFileStorage`. Cambiar de
+  implementación no toca el dominio ni la aplicación (eso es justamente lo que demuestra Clean Architecture).
 
 ---
 
@@ -105,7 +107,7 @@ infrastructure  →  application / domain   (implementa sus interfaces)
 - Bounded context: `document-processing`.
 - `Upload` es **Aggregate Root**. Protege sus transiciones de estado:
   `PENDING → PROCESSING → COMPLETED | FAILED`. Además `PROCESSING → PROCESSING` está permitida
-  **solo como reanudación de un reintento** (método explícito `resumeProcessing()`, ver ADR-003).
+  **solo como reanudación de un reintento** (`startProcessing()` la acepta y reinicia los contadores, ver ADR-003).
   `PENDING → FAILED` se permite si falla la publicación en la cola. Cualquier otra transición retorna `Left`.
 - El `id` del upload es un UUID generado en el dominio (`crypto.randomUUID`, módulo nativo de Node).
 - Value objects: `UploadStatus`, `FileName` (no vacío, termina en `.csv`, máx. 255 caracteres,
@@ -114,7 +116,7 @@ infrastructure  →  application / domain   (implementa sus interfaces)
 - **Mappers** entre modelos de Prisma y entidades de dominio. Las entidades nunca son tipos de Prisma.
 
 ### CQRS
-- Commands (escriben): `CreateUploadCommand`, `ProcessFileCommand`.
+- Commands (escriben): `CreateUploadCommand`, `ProcessFileCommand`, `FailUploadCommand`.
 - Queries (leen): `GetUploadByIdQuery`, `ListUploadsQuery`, `GetUploadResultsQuery`, `GetUploadStatsQuery`.
 - Cada uno con su handler. Interfaces:
 ```ts
@@ -170,12 +172,14 @@ interface IQueryHandler<TQuery, TResult> {
 ### Worker
 - Long polling a SQS (`WaitTimeSeconds: 10`).
 - Al recibir `{ uploadId }`: si el upload ya está `COMPLETED` o `FAILED`, ignora y borra el mensaje (idempotencia).
-- Si está `PROCESSING` (reintento tras un fallo), reanuda con `resumeProcessing()`.
+- Si está `PROCESSING` (reintento tras un fallo), `startProcessing()` lo reanuda (`PROCESSING → PROCESSING`).
 - Antes de reprocesar, borra las `ActivityData` previas de ese upload.
 - Lee el atributo `ApproximateReceiveCount`: si es el **último intento** (= `maxReceiveCount`) y
   falla, marca el upload `FAILED` antes de que el mensaje pase a la DLQ. Si no, el frontend haría
   polling infinito sobre un upload que nadie va a terminar (ADR-003).
-- **Solo borra el mensaje cuando terminó.** Si falla por algo transitorio, no lo borra: SQS lo reintenta.
+- **Solo borra el mensaje cuando terminó.** Si falla por algo transitorio, no lo borra: lo reprograma con
+  **exponential backoff** (`ChangeMessageVisibility`: 10 s, 40 s... con tope de 300 s; ADR-007).
+- Los errores de negocio (upload inexistente) no se reintentan: se borra el mensaje.
 - `maxReceiveCount: 3` → Dead Letter Queue.
 - Apagado limpio con `SIGINT` / `SIGTERM`.
 
@@ -269,17 +273,19 @@ cambian configuración y no aportan nada a esta prueba; el riesgo de perder tiem
 
 ---
 
-## 9.1 Notas técnicas a verificar (no asumir de memoria)
+## 9.1 Notas técnicas verificadas
 
-- **LocalStack:** confirmar en la documentación si la imagen actual exige `LOCALSTACK_AUTH_TOKEN`.
-  Fijar una versión concreta de la imagen (nunca `latest`). Si no hay opción gratuita viable → plan B (ADR-001).
-- **Scripts `.sh` en Windows:** deben tener saltos de línea LF (`.gitattributes`), o el init de LocalStack falla.
-- **S3 en LocalStack:** el cliente necesita `forcePathStyle: true` y `endpoint` configurable.
-- **Prisma:** confirmar la versión instalada. Prisma 7 usa `prisma.config.ts`, driver adapter
-  (`@prisma/adapter-pg`) y la URL ya no va en `schema.prisma`. No mezclar tutoriales de versiones distintas.
-- **Tailwind:** v4 no usa `tailwind.config.ts` por defecto; confirmar versión.
-- **Node local:** v25 instalada; las imágenes Docker usan Node 22 LTS. Si algo falla por versión, fijar con `engines`.
-- **Diagrama AWS:** además del Mermaid, exportar `docs/arquitectura-aws.png` (lo pide la estructura de entrega).
+Puntos que se verificaron en la documentación o en la práctica en vez de asumirse de memoria:
+
+- **LocalStack** exige `LOCALSTACK_AUTH_TOKEN` desde la versión 2026.03 → se usó ElasticMQ (ADR-001).
+  Las imágenes Docker se fijan siempre a una versión concreta, nunca `latest`.
+- **Prisma** fijado en 6.19 (Prisma 7+ cambia la configuración: `prisma.config.ts` y driver adapters).
+  Prisma Client carga el `.env` al importarse; en tests, `.env.test` debe tener prioridad (ADR-007).
+- **Tailwind v4** no usa `tailwind.config.ts`: la configuración vive en `globals.css` con `@theme` (ADR-006).
+- **Node:** local v25; las imágenes Docker usan Node 22 LTS con npm 11.6.2 fijado (ADR-005).
+- **PostgreSQL** expuesto en el puerto 5433 del host para no chocar con una instalación local (ADR-005).
+- **Healthchecks en Alpine:** usar `127.0.0.1`, porque `localhost` resuelve primero a IPv6.
+- **Diagrama AWS:** fuente Mermaid en `docs/arquitectura-aws.md` y exportado a `docs/arquitectura-aws.png`.
 
 ---
 

@@ -1,6 +1,6 @@
-# ADR-001: Usar SQS y S3 en LocalStack en lugar de una cola en memoria
+# ADR-001: Usar la API real de SQS en lugar de una cola en memoria
 
-- **Estado:** aceptada
+- **Estado:** aceptada, revisada durante la fase 1 (LocalStack → ElasticMQ; ver la sección "Revisión" al final)
 
 ## Contexto
 El enunciado sugiere una cola "mock" con un array en memoria y un worker que hace polling.

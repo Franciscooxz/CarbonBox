@@ -76,9 +76,8 @@ cd frontend; copy .env.example .env.local; npm install; npm run dev   # terminal
 - Hallazgo: con la pestaña oculta, React Query **pausa** el polling (`refetchIntervalInBackground: false`)
   y al volver a la pestaña refresca de inmediato. Es el comportamiento que queremos.
 
-## Preguntas de entrevista y mis respuestas
+## Preguntas de repaso para la entrevista
 1. ¿Cómo sabe React Query cuándo dejar de hacer polling en el detalle, y qué pasa si el usuario cambia de pestaña?
 2. Después de subir un archivo, ¿por qué la lista y el dashboard muestran el nuevo upload sin recargar la página?
 3. ¿Por qué `page.tsx` es un Server Component y `UploadDetail` es un Client Component? ¿Qué pasaría si usaras `useQuery` en el page?
 
-_(Respuestas pendientes)_

@@ -55,9 +55,8 @@ docker compose logs worker         # logs JSON: "Upload procesado"
 - El frontend del contenedor lista los uploads desde la API del contenedor (CORS y URL correctos).
 - Logs del worker en JSON estructurado (pino en modo producción).
 
-## Preguntas de entrevista y mis respuestas
+## Preguntas de repaso para la entrevista
 1. ¿Por qué la API y el worker usan la misma imagen Docker? ¿Cómo se traduce eso a ECS?
 2. En AWS, ¿qué métrica usarías para escalar el worker y por qué no la CPU?
 3. ¿Qué pasa con un mensaje que falla 3 veces? ¿Cómo te enterarías en producción?
 
-_(Respuestas pendientes)_

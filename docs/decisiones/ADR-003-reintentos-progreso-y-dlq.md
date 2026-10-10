@@ -17,7 +17,8 @@ Al revisar el plan inicial aparecieron cuatro problemas que harían fallar el si
 
 ## Opciones consideradas
 - Reintento: **A.** permitir cualquier transición (pierde la protección del agregado) ·
-  **B.** método explícito `resumeProcessing()` válido solo desde `PROCESSING`.
+  **B.** permitir solo la transición adicional `PROCESSING → PROCESSING` (reanudación), definida en la tabla
+  de transiciones de `UploadStatus`.
 - DLQ: **A.** consumidor aparte que lea la DLQ y marque `FAILED` · **B.** el worker lee
   `ApproximateReceiveCount` y marca `FAILED` en el último intento.
 - Progreso: **A.** una transacción global · **B.** una transacción por lote.
@@ -25,6 +26,8 @@ Al revisar el plan inicial aparecieron cuatro problemas que harían fallar el si
 
 ## Decisión
 Reintento **B**, DLQ **B** (la DLQ queda para inspección manual), progreso **B**, parseo **B**.
+En el código, `Upload.startProcessing()` acepta tanto `PENDING` como `PROCESSING` y reinicia los contadores;
+cualquier otra transición sigue retornando `Left`.
 Además, si falla la publicación en SQS al crear el upload, se marca `FAILED` (`PENDING → FAILED`).
 
 ## Consecuencias

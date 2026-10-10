@@ -73,7 +73,7 @@ curl.exe http://localhost:3001/api/v1/uploads/<id>/results
 ```
 
 ### Resultados verificados
-- `typecheck`, `lint`: sin errores. `test`: **44 tests en 7 archivos, todos pasan**.
+- `typecheck`, `lint`: sin errores. `test`: **44 tests en 7 archivos, todos pasan** (al cierre de esta fase; con los bonus posteriores son 49 unitarios y 15 de integración).
 - `sample-data.csv` → `COMPLETED`, 60/60 filas.
 - `sample-data-con-errores.csv` → `COMPLETED`, 2 válidas, 7 fallidas, con el detalle de cada fila.
 - `sample-data-header-invalido.csv` → `FAILED` con "Header inválido...".
@@ -81,9 +81,8 @@ curl.exe http://localhost:3001/api/v1/uploads/<id>/results
   Al volver la cola, el worker se recupera solo.
 - 404 en id inexistente, 400 en `page=0` o archivo `.txt`, 406 si no es multipart.
 
-## Preguntas de entrevista y mis respuestas
+## Preguntas de repaso para la entrevista
 1. ¿Por qué el worker no borra el mensaje cuando falla, y qué evita que se reintente para siempre?
 2. ¿Por qué `saveBatchWithProgress` usa una transacción por lote y no una sola para todo el archivo?
 3. Si mañana hay que usar S3 real en vez del filesystem, ¿qué archivos cambias y cuáles no tocas?
 
-_(Respuestas pendientes)_
