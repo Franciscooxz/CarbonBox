@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+/* Tailwind v4: la configuración vive en CSS (@theme), ya no hace falta tailwind.config.ts.
+   Estética de "libro contable": papel cálido, tinta, reglas finas y números monoespaciados. */
+@theme {
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-newsreader), Georgia, "Times New Roman", serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "Cascadia Mono", monospace;
+
+  --color-paper: #f5f1e8;
+  --color-paper-sunk: #ebe5d8;
+  --color-ink: #1d1c19;
+  --color-ink-muted: #5f5a50;
+  --color-ink-faint: #8f887a;
+  --color-rule: #d8d0bf;
+  --color-accent: #1f4d3a;
+  --color-accent-hover: #163a2b;
+
+  /* Estados (amarillo, azul, verde, rojo como pide el enunciado), en tonos de tinta y no saturados. */
+  --color-pending: #9a6b00;
+  --color-pending-wash: #f3e6c4;
+  --color-processing: #24557f;
+  --color-processing-wash: #dde7ef;
+  --color-completed: #2d6a3e;
+  --color-completed-wash: #dfeadb;
+  --color-failed: #a1352a;
+  --color-failed-wash: #f2dcd6;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+  }
+
+  ::selection {
+    background-color: var(--color-accent);
+    color: var(--color-paper);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+}
