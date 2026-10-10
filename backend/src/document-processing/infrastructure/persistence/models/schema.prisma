@@ -1,0 +1,51 @@
+generator client {
+  provider = "prisma-client-js"
+  // linux-musl para la imagen Docker (alpine) en la fase 3.
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// La base de datos también protege los estados válidos (ADR-004).
+enum UploadStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model Upload {
+  id            String       @id
+  fileName      String
+  fileUrl       String
+  status        UploadStatus
+  userId        String
+  totalRows     Int?
+  processedRows Int?
+  failedRows    Int?
+  errorMessage  String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  activityData ActivityData[]
+
+  // La lista se consulta por usuario ordenada por fecha.
+  @@index([userId, createdAt])
+}
+
+model ActivityData {
+  id        String   @id
+  uploadId  String
+  category  String
+  amount    Float
+  unit      String
+  date      DateTime @db.Date
+  createdAt DateTime @default(now())
+
+  upload Upload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+
+  @@index([uploadId])
+}
