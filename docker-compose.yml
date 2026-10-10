@@ -1,0 +1,92 @@
+# Sistema completo:            docker compose up -d --build
+# Solo infraestructura (dev):  docker compose up -d postgres sqs
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: document_processing
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432" # 5433 en el host: evita choque con un PostgreSQL instalado en Windows (ADR-005)
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d document_processing"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Implementa la API de SQS. Mismo @aws-sdk/client-sqs que en AWS, solo cambia el endpoint (ADR-001).
+  sqs:
+    image: softwaremill/elasticmq-native:1.7.1
+    ports:
+      - "9324:9324"
+    volumes:
+      - ./infra/elasticmq/elasticmq.conf:/opt/elasticmq.conf:ro
+
+  api:
+    build: ./backend
+    environment: &backend-env
+      NODE_ENV: production
+      PORT: 3001
+      LOG_LEVEL: info
+      CORS_ORIGIN: http://localhost:3000
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/document_processing?schema=public
+      DEFAULT_USER_ID: user-123
+      MAX_FILE_SIZE_MB: 10
+      STORAGE_DIR: /app/uploads
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: local
+      AWS_SECRET_ACCESS_KEY: local
+      # Dentro de la red de Docker, la cola se llama "sqs", no "localhost".
+      SQS_ENDPOINT: http://sqs:9324
+      SQS_QUEUE_URL: http://sqs:9324/000000000000/file-processing
+      SQS_MAX_RECEIVE_COUNT: 3
+      SQS_WAIT_TIME_SECONDS: 10
+      # Exponential backoff de reintentos: 10 s, 40 s, 160 s... con tope de 300 s.
+      SQS_RETRY_BASE_DELAY_SECONDS: 10
+      SQS_RETRY_BACKOFF_FACTOR: 4
+      SQS_RETRY_MAX_DELAY_SECONDS: 300
+    ports:
+      - "3001:3001"
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      sqs:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3001/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  worker:
+    build: ./backend
+    command: ["node", "dist/workers/FileProcessingWorker.js"]
+    environment: *backend-env
+    # Comparte el volumen con la API: así lee los archivos que la API guardó.
+    # En AWS este volumen compartido lo reemplaza S3.
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      # Espera a que la API esté sana, es decir, a que las migraciones ya estén aplicadas.
+      api:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:3001/api/v1
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  uploads_data:
