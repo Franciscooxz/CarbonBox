@@ -1,0 +1,61 @@
+category,amount,unit,date
+Diesel,190.4,L,2024-01-01
+Air Travel,2708.5,km,2024-01-04
+Natural Gas,126.8,m3,2024-01-07
+Natural Gas,67.5,m3,2024-01-10
+Electricity,462.1,kWh,2024-01-13
+Waste,14.1,kg,2024-01-16
+Air Travel,1847.2,km,2024-01-19
+Waste,20.0,kg,2024-01-22
+Air Travel,518.7,km,2024-01-25
+Natural Gas,143.2,m3,2024-01-28
+Electricity,322.4,kWh,2024-01-31
+Air Travel,483.5,km,2024-02-03
+Waste,15.1,kg,2024-02-06
+Transportation,267.2,km,2024-02-09
+Transportation,455.5,km,2024-02-12
+Water,153.3,m3,2024-02-15
+Transportation,127.3,km,2024-02-18
+Waste,51.0,kg,2024-02-21
+Natural Gas,93.4,m3,2024-02-24
+Waste,64.6,kg,2024-02-27
+Air Travel,3175.7,km,2024-03-01
+Paper,24.3,kg,2024-03-04
+Paper,15.7,kg,2024-03-07
+Waste,97.4,kg,2024-03-10
+Waste,19.0,kg,2024-03-13
+Water,145.5,m3,2024-03-16
+Diesel,149.9,L,2024-03-19
+Water,164.0,m3,2024-03-22
+Natural Gas,35.3,m3,2024-03-25
+Air Travel,910.4,km,2024-03-28
+Diesel,43.1,L,2024-03-31
+Paper,18.0,kg,2024-04-03
+Natural Gas,119.4,m3,2024-04-06
+Diesel,77.9,L,2024-04-09
+Diesel,125.0,L,2024-04-12
+Paper,4.6,kg,2024-04-15
+Natural Gas,142.8,m3,2024-04-18
+Paper,28.5,kg,2024-04-21
+Natural Gas,27.9,m3,2024-04-24
+Water,172.4,m3,2024-04-27
+Paper,12.8,kg,2024-04-30
+Air Travel,3582.0,km,2024-05-03
+Diesel,19.2,L,2024-05-06
+Paper,15.5,kg,2024-05-09
+Natural Gas,84.2,m3,2024-05-12
+Waste,94.5,kg,2024-05-15
+Transportation,603.8,km,2024-05-18
+Air Travel,1746.5,km,2024-05-21
+Paper,5.1,kg,2024-05-24
+Paper,17.3,kg,2024-05-27
+Water,224.3,m3,2024-05-30
+Air Travel,3496.7,km,2024-06-02
+Water,185.4,m3,2024-06-05
+Diesel,141.3,L,2024-06-08
+Air Travel,3843.6,km,2024-06-11
+Transportation,112.2,km,2024-06-14
+Transportation,224.0,km,2024-06-17
+Waste,11.3,kg,2024-06-20
+Transportation,247.1,km,2024-06-23
+Electricity,141.2,kWh,2024-06-26
